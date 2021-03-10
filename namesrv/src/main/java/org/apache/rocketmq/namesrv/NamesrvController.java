@@ -77,6 +77,7 @@ public class NamesrvController {
 
         this.kvConfigManager.load();
 
+        // netty server端启动类
         this.remotingServer = new NettyRemotingServer(this.nettyServerConfig, this.brokerHousekeepingService);
 
         this.remotingExecutor =
@@ -86,6 +87,7 @@ public class NamesrvController {
 
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
+            // 每10秒扫描一次，清理超过两分钟没有收到心跳的broker
             @Override
             public void run() {
                 NamesrvController.this.routeInfoManager.scanNotActiveBroker();
@@ -94,6 +96,7 @@ public class NamesrvController {
 
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
+            // 每10秒打印一次K-V配置日志
             @Override
             public void run() {
                 NamesrvController.this.kvConfigManager.printAllPeriodically();
