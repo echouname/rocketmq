@@ -76,6 +76,7 @@ public class TopicPublishInfo {
                 if (pos < 0)
                     pos = 0;
                 MessageQueue mq = this.messageQueueList.get(pos);
+                // 如果brokerA 挂掉了 那么brokerA的所有队列都是不可用的 所以要排除掉
                 if (!mq.getBrokerName().equals(lastBrokerName)) {
                     return mq;
                 }

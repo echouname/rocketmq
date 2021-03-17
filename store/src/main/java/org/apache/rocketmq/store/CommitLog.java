@@ -835,6 +835,7 @@ public class CommitLog {
         MappedFile unlockMappedFile = null;
         MappedFile mappedFile = this.mappedFileQueue.getLastMappedFile();
 
+        // 申请写锁控制并发写入
         putMessageLock.lock(); //spin or ReentrantLock ,depending on store config
         try {
             long beginLockTimestamp = this.defaultMessageStore.getSystemClock().now();
@@ -853,6 +854,7 @@ public class CommitLog {
                 return new PutMessageResult(PutMessageStatus.CREATE_MAPEDFILE_FAILED, null);
             }
 
+            // 写入commit log
             result = mappedFile.appendMessage(msg, this.appendMessageCallback);
             switch (result.getStatus()) {
                 case PUT_OK:
@@ -1548,6 +1550,7 @@ public class CommitLog {
             String key = keyBuilder.toString();
             Long queueOffset = CommitLog.this.topicQueueTable.get(key);
             if (null == queueOffset) {
+                // 保存message queue
                 queueOffset = 0L;
                 CommitLog.this.topicQueueTable.put(key, queueOffset);
             }
@@ -1585,6 +1588,7 @@ public class CommitLog {
 
             final int bodyLength = msgInner.getBody() == null ? 0 : msgInner.getBody().length;
 
+            // 消息总长度
             final int msgLen = calMsgLength(msgInner.getSysFlag(), bodyLength, topicLength, propertiesLength);
 
             // Exceeds the maximum message
@@ -1596,6 +1600,18 @@ public class CommitLog {
 
             // Determines whether there is sufficient free space
             if ((msgLen + END_FILE_MIN_BLANK_LENGTH) > maxBlank) {
+                // commit log不够写
+                /**
+                 *    |-----|------|---------|
+                 *    |-----|------|---------|
+                 *   🔼     🔼     🔼        🔼
+                 *   0    position limit    capacity
+                 *
+                 *    |---------|------------|
+                 *    |---------|------------|
+                 *   🔼 maxBlank🔼           🔼
+                 * position   limit        capacity
+                 */
                 this.resetByteBuffer(this.msgStoreItemMemory, maxBlank);
                 // 1 TOTALSIZE
                 this.msgStoreItemMemory.putInt(maxBlank);
@@ -1604,12 +1620,24 @@ public class CommitLog {
                 // 3 The remaining space may be any value
                 // Here the length of the specially set maxBlank
                 final long beginTimeMills = CommitLog.this.defaultMessageStore.now();
+                //  commit Log 文件预留了8个字节 刚好前四个字节写入消息总长度,后四个字节写入魔数
                 byteBuffer.put(this.msgStoreItemMemory.array(), 0, maxBlank);
                 return new AppendMessageResult(AppendMessageStatus.END_OF_FILE, wroteOffset, maxBlank, msgId, msgInner.getStoreTimestamp(),
                     queueOffset, CommitLog.this.defaultMessageStore.now() - beginTimeMills);
             }
 
             // Initialization of storage space
+            /**
+             *    |-----|------|---------|
+             *    |-----|------|---------|
+             *   🔼     🔼     🔼        🔼
+             *   0    position limit    capacity
+             *
+             *    |-----------------|----|
+             *    |-----------------|----|
+             *   🔼      msgLen     🔼   🔼
+             * position           limit capacity
+             */
             this.resetByteBuffer(msgStoreItemMemory, msgLen);
             // 1 TOTALSIZE
             this.msgStoreItemMemory.putInt(msgLen);
@@ -1655,6 +1683,7 @@ public class CommitLog {
 
             final long beginTimeMills = CommitLog.this.defaultMessageStore.now();
             // Write messages to the queue buffer
+            // 消息追加到MappedFile对应的内存中，这里并没有刷盘
             byteBuffer.put(this.msgStoreItemMemory.array(), 0, msgLen);
 
             AppendMessageResult result = new AppendMessageResult(AppendMessageStatus.PUT_OK, wroteOffset, msgLen, msgId,
@@ -1667,6 +1696,7 @@ public class CommitLog {
                 case MessageSysFlag.TRANSACTION_NOT_TYPE:
                 case MessageSysFlag.TRANSACTION_COMMIT_TYPE:
                     // The next update ConsumeQueue information
+                    // 更新message queue offset信息
                     CommitLog.this.topicQueueTable.put(key, ++queueOffset);
                     break;
                 default:

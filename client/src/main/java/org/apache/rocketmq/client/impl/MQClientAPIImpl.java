@@ -451,6 +451,7 @@ public class MQClientAPIImpl {
         boolean isReply = msgType != null && msgType.equals(MixAll.REPLY_MESSAGE_FLAG);
         if (isReply) {
             if (sendSmartMsg) {
+                // 使用短变量名 优化序列化的速度
                 SendMessageRequestHeaderV2 requestHeaderV2 = SendMessageRequestHeaderV2.createSendMessageRequestHeaderV2(requestHeader);
                 request = RemotingCommand.createRequestCommand(RequestCode.SEND_REPLY_MESSAGE_V2, requestHeaderV2);
             } else {

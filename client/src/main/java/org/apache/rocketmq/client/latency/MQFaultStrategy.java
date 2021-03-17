@@ -58,6 +58,7 @@ public class MQFaultStrategy {
     public MessageQueue selectOneMessageQueue(final TopicPublishInfo tpInfo, final String lastBrokerName) {
         if (this.sendLatencyFaultEnable) {
             try {
+                // 开启故障兜底策略 跳过已经挂掉的broker
                 int index = tpInfo.getSendWhichQueue().getAndIncrement();
                 for (int i = 0; i < tpInfo.getMessageQueueList().size(); i++) {
                     int pos = Math.abs(index++) % tpInfo.getMessageQueueList().size();
@@ -68,6 +69,7 @@ public class MQFaultStrategy {
                         return mq;
                 }
 
+                // 如果无broker可用，选出一个可能已经恢复正常的broker
                 final String notBestBroker = latencyFaultTolerance.pickOneAtLeast();
                 int writeQueueNums = tpInfo.getQueueIdByBroker(notBestBroker);
                 if (writeQueueNums > 0) {
@@ -83,10 +85,10 @@ public class MQFaultStrategy {
             } catch (Exception e) {
                 log.error("Error occurred when selecting message queue", e);
             }
-
             return tpInfo.selectOneMessageQueue();
         }
 
+        // 根据messageQueue自增索引取模 轮训
         return tpInfo.selectOneMessageQueue(lastBrokerName);
     }
 

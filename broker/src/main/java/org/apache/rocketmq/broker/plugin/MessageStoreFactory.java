@@ -31,6 +31,7 @@ public final class MessageStoreFactory {
                 String pluginClass = pluginClasses[i];
                 try {
                     @SuppressWarnings("unchecked")
+                    // 构建插件调用链
                     Class<AbstractPluginMessageStore> clazz = (Class<AbstractPluginMessageStore>) Class.forName(pluginClass);
                     Constructor<AbstractPluginMessageStore> construct = clazz.getConstructor(MessageStorePluginContext.class, MessageStore.class);
                     messageStore = construct.newInstance(context, messageStore);

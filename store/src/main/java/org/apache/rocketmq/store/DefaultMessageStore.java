@@ -389,6 +389,7 @@ public class DefaultMessageStore implements MessageStore {
             return PutMessageStatus.SERVICE_NOT_AVAILABLE;
         }
 
+        // 只有master节点才可以保存消息
         if (BrokerRole.SLAVE == this.messageStoreConfig.getBrokerRole()) {
             long value = this.printTimes.getAndIncrement();
             if ((value % 50000) == 0) {
@@ -398,6 +399,7 @@ public class DefaultMessageStore implements MessageStore {
         }
 
         if (!this.runningFlags.isWriteable()) {
+            // 文件不可写
             long value = this.printTimes.getAndIncrement();
             if ((value % 50000) == 0) {
                 log.warn("the message store is not writable. It may be caused by one of the following reasons: " +
@@ -476,11 +478,13 @@ public class DefaultMessageStore implements MessageStore {
 
     @Override
     public PutMessageResult putMessage(MessageExtBrokerInner msg) {
+        // 检查message store是否可写
         PutMessageStatus checkStoreStatus = this.checkStoreStatus();
         if (checkStoreStatus != PutMessageStatus.PUT_OK) {
             return new PutMessageResult(checkStoreStatus, null);
         }
 
+        // 检查消息合规性
         PutMessageStatus msgCheckStatus = this.checkMessage(msg);
         if (msgCheckStatus == PutMessageStatus.MESSAGE_ILLEGAL) {
             return new PutMessageResult(msgCheckStatus, null);

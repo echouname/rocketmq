@@ -207,8 +207,10 @@ public class MappedFile extends ReferenceResource {
             byteBuffer.position(currentPos);
             AppendMessageResult result;
             if (messageExt instanceof MessageExtBrokerInner) {
+                // 单条消息
                 result = cb.doAppend(this.getFileFromOffset(), byteBuffer, this.fileSize - currentPos, (MessageExtBrokerInner) messageExt);
             } else if (messageExt instanceof MessageExtBatch) {
+                // 批量消息
                 result = cb.doAppend(this.getFileFromOffset(), byteBuffer, this.fileSize - currentPos, (MessageExtBatch) messageExt);
             } else {
                 return new AppendMessageResult(AppendMessageStatus.UNKNOWN_ERROR);
@@ -335,6 +337,11 @@ public class MappedFile extends ReferenceResource {
         }
     }
 
+    /**
+     *
+     * @param flushLeastPages flush的最小页数
+     * @return
+     */
     private boolean isAbleToFlush(final int flushLeastPages) {
         int flush = this.flushedPosition.get();
         int write = getReadPosition();
@@ -350,6 +357,11 @@ public class MappedFile extends ReferenceResource {
         return write > flush;
     }
 
+    /**
+     *
+     * @param commitLeastPages commit的最小页数
+     * @return
+     */
     protected boolean isAbleToCommit(final int commitLeastPages) {
         int flush = this.committedPosition.get();
         int write = this.wrotePosition.get();

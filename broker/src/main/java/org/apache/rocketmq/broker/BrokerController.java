@@ -232,10 +232,13 @@ public class BrokerController {
     }
 
     public boolean initialize() throws CloneNotSupportedException {
+        // topic配置
         boolean result = this.topicConfigManager.load();
-
+        // 偏移状态
         result = result && this.consumerOffsetManager.load();
+        // 订阅组
         result = result && this.subscriptionGroupManager.load();
+        // 消息过滤
         result = result && this.consumerFilterManager.load();
 
         if (result) {
@@ -248,7 +251,7 @@ public class BrokerController {
                     ((DLedgerCommitLog)((DefaultMessageStore) messageStore).getCommitLog()).getdLedgerServer().getdLedgerLeaderElector().addRoleChangeHandler(roleChangeHandler);
                 }
                 this.brokerStats = new BrokerStats((DefaultMessageStore) this.messageStore);
-                //load plugin
+                // load plugin
                 MessageStorePluginContext context = new MessageStorePluginContext(messageStoreConfig, brokerStatsManager, messageArrivingListener, brokerConfig);
                 this.messageStore = MessageStoreFactory.build(context, this.messageStore);
                 this.messageStore.getDispatcherList().addFirst(new CommitLogDispatcherCalcBitMap(this.brokerConfig, this.consumerFilterManager));
@@ -261,10 +264,12 @@ public class BrokerController {
         result = result && this.messageStore.load();
 
         if (result) {
+            // 初始化netty server
             this.remotingServer = new NettyRemotingServer(this.nettyServerConfig, this.clientHousekeepingService);
             NettyServerConfig fastConfig = (NettyServerConfig) this.nettyServerConfig.clone();
             fastConfig.setListenPort(nettyServerConfig.getListenPort() - 2);
             this.fastRemotingServer = new NettyRemotingServer(fastConfig, this.clientHousekeepingService);
+            // 初始化工作线程
             this.sendMessageExecutor = new BrokerFixedThreadPoolExecutor(
                 this.brokerConfig.getSendMessageThreadPoolNums(),
                 this.brokerConfig.getSendMessageThreadPoolNums(),
@@ -333,6 +338,7 @@ public class BrokerController {
 
             final long initialDelay = UtilAll.computeNextMorningTimeMillis() - System.currentTimeMillis();
             final long period = 1000 * 60 * 60 * 24;
+            // 定时记录broker的消息日志
             this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
                 @Override
                 public void run() {
@@ -853,6 +859,7 @@ public class BrokerController {
             this.messageStore.start();
         }
 
+        // broker netty server 与producer 和consumer通信
         if (this.remotingServer != null) {
             this.remotingServer.start();
         }
@@ -865,6 +872,7 @@ public class BrokerController {
             this.fileWatchService.start();
         }
 
+        // broker netty client 与 name server 通信
         if (this.brokerOuterAPI != null) {
             this.brokerOuterAPI.start();
         }
