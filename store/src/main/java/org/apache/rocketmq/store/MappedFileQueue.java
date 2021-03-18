@@ -35,10 +35,13 @@ public class MappedFileQueue {
 
     private static final int DELETE_FILES_BATCH_MAX = 10;
 
+    // store 路径 ${rocketmq.home}/store/${fileType}
     private final String storePath;
 
+    //  文件大小默认
     private final int mappedFileSize;
 
+    //  文件数组
     private final CopyOnWriteArrayList<MappedFile> mappedFiles = new CopyOnWriteArrayList<MappedFile>();
 
     private final AllocateMappedFileService allocateMappedFileService;
@@ -145,6 +148,7 @@ public class MappedFileQueue {
     }
 
     public boolean load() {
+        // 加载文件
         File dir = new File(this.storePath);
         File[] files = dir.listFiles();
         if (files != null) {
@@ -160,7 +164,6 @@ public class MappedFileQueue {
 
                 try {
                     MappedFile mappedFile = new MappedFile(file.getPath(), mappedFileSize);
-
                     mappedFile.setWrotePosition(this.mappedFileSize);
                     mappedFile.setFlushedPosition(this.mappedFileSize);
                     mappedFile.setCommittedPosition(this.mappedFileSize);

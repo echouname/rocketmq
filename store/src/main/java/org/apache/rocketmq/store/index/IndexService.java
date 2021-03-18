@@ -298,6 +298,7 @@ public class IndexService {
         {
             this.readWriteLock.readLock().lock();
             if (!this.indexFileList.isEmpty()) {
+                // 从内存中拿到数组的最后一个索引文件
                 IndexFile tmp = this.indexFileList.get(this.indexFileList.size() - 1);
                 if (!tmp.isWriteFull()) {
                     indexFile = tmp;
@@ -313,6 +314,7 @@ public class IndexService {
 
         if (indexFile == null) {
             try {
+                // 创建新的index log 以当前时间作为文件名
                 String fileName =
                     this.storePath + File.separator
                         + UtilAll.timeMillisToHumanString(System.currentTimeMillis());
@@ -329,6 +331,7 @@ public class IndexService {
 
             if (indexFile != null) {
                 final IndexFile flushThisFile = prevIndexFile;
+                // 开启一个守护线程异步刷盘 这里保存的是上一个index file
                 Thread flushThread = new Thread(new Runnable() {
                     @Override
                     public void run() {

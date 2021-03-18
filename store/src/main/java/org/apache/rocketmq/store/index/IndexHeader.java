@@ -20,6 +20,14 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ *                                          Index Header 结构
+ *
+ *               8 byte          8byte           8byte                8byte             4byte           4byte
+ *         +----------------+----------------+----------------+-------------------+-----------------+-----------+
+ *         |begin TimeStamp |  endTimeStamp  | beginPhyoffset | endPhyoffsetIndex | hash slot count |index count|
+ *         +----------------+----------------+----------------+-------------------+-----------------+-----------+
+ */
 public class IndexHeader {
     public static final int INDEX_HEADER_SIZE = 40;
     private static int beginTimestampIndex = 0;
